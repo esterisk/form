@@ -1,0 +1,19 @@
+{
+    "name": "esterisk/form",
+    "description": "Form creation and validation.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Silvio Sosio",
+            "email": "silvio@sosio.it"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload" : {
+        "psr-4": {
+            "Esterisk\\Form\\": "src/"
+        }
+    },
+    "require": {}
+}

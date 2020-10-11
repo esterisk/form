@@ -15,11 +15,17 @@ class Field
 	var $defaultValue = null;
 	var $arrayField = false;
 	var $controlblock = false;
+	var $emptyValue = false;
 
 	public function __construct($name, $form)
 	{
 		$this->name = $name;
 		$this->form = $form;
+	}
+	
+	public function getFieldList()
+	{	
+		return [ $this ];
 	}
 	
 	public function __get($property) {

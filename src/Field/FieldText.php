@@ -6,6 +6,7 @@ class FieldText extends Field
 	var $length = 255;
 	var $fieldtype = 'text';
 	var $template = 'text';
+	var $emptyValue = '';
 
 	public function getRules()
 	{

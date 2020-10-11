@@ -5,7 +5,7 @@
 			@foreach ($field->fields as $subfield)
 			<div class="form-check checkbox col-md-12">
 			  <label class="form-check-label" for="{{ $subfield->name }}">
-			  <input class="form-check-input" type="{{ $subfield->fieldtype }}" value="{{ $subfield->value }}" id="{{ $subfield->name }}" name="{{ $field->subfield }}"{{ $subfield->checked($subfield->value) }}>
+			  <input class="form-check-input" type="{{ $subfield->fieldtype }}" value="{{ $subfield->value }}" id="{{ $subfield->name }}" name="{{ $subfield->name }}"{{ $subfield->checked($subfield->value) }}>
 				{{ $subfield->label }}
 			  </label>
 				@if (!empty($subfield->help))

@@ -13,6 +13,7 @@ class Form
 	var $htmlclass = '';
 	var $title = '';
 	var $instructions = '';
+	var $fieldList = [];
 
 	public function __construct($options = [])
 	{
@@ -59,12 +60,19 @@ class Form
 	}
 
 	public function addFields($fields) {
-		foreach($fields as $field) $this->fields[$field->name ?: $field->fieldtype ] = $field;
+		foreach($fields as $field) {
+			$key = $field->name ?: $field->fieldtype;
+			$this->fields[ $key ] = $field;
+			foreach ( $field->getFieldList() as $fd) {
+				$key = $fd->name ?: $fd->fieldtype;
+				$this->fieldList[ $key ] = $fd;
+			}
+		}
 	}
 	
 	public function validation() {
 		$rules = [];
-		foreach ($this->fields as $field) {
+		foreach ($this->fieldList as $field) {
 		//	if (method_exists($field, 'validator')) $field->validator();
 			if ($field->name) {
 				if ($field->arrayField) $rules[$field->name.'.*'] = $field->getRules();
@@ -77,7 +85,7 @@ class Form
 	public function sanitize($request)
 	{
 		$input = $request->all();
-		foreach ($this->fields as $field) if (isset($input[$field->name]) && method_exists($field, 'sanitize')) { 
+		foreach ($this->fieldList as $field) if (isset($input[$field->name]) && method_exists($field, 'sanitize')) { 
 			$sanitizedValue = $field->sanitize($input[$field->name], $input); 
 			if ($sanitizedValue != $input[$field->name]) {
 				$input[$field->name] = $sanitizedValue;
@@ -91,7 +99,7 @@ class Form
 		$rules = $this->validation();
 		$validator = Validator::make($request->all(), $rules);
 		$validator->after(function ($validator) {
-			foreach ($this->fields as $field) if (method_exists($field, 'validator')) {
+			foreach ($this->fieldList as $field) if (method_exists($field, 'validator')) {
 				$name = $field->name;
 				$result = $field->validator();
 				if ($result !== true) {
@@ -110,14 +118,17 @@ class Form
 		$src = $request->all();
 		$dst = [];
 		foreach ($src as $key => $value) {
-			if (isset($this->fields[$key])) $dst[$key] = $this->fields[$key]->prepareForSave($value);
+			if (isset($this->fieldList[$key])) $dst[$key] = $this->fieldList[$key]->prepareForSave($value);
+		}
+		foreach ($this->fieldList as $key => $fd) {
+			if (!isset($dst[$key])) $dst[$key] = $fd->emptyValue;
 		}
 		return $dst;
 	}
 
 	public function saveRelations($record) {
 		$rules = [];
-		foreach ($this->fields as $field) {
+		foreach ($this->fieldList as $field) {
 			if (method_exists($field, 'save')) $field->save($record);
 		}
 	}

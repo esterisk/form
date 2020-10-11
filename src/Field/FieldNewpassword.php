@@ -15,5 +15,13 @@ class FieldNewpassword extends Field
 			return 'la password non rispetta le regole indicate';
         } else return true;
     	}
+
+	public function prepareForSave($value) {
+		return \Illuminate\Support\Facades\Hash::make($value);
+	}
+
+	public function prepareForEdit($value) {
+		return '';
+	}
 	
 }

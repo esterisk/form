@@ -28,9 +28,8 @@ Create a Form Class inserting all the form fields:
 ```php
 <?php
 namespace App\Http\Forms;
-use App\Form\Form;
+use Esterisk\Form;
 use Illuminate\Validation\Rule;
-use App\Models\Macrogenre;
 
 class MyForm extends Form
 {

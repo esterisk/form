@@ -5,6 +5,7 @@ class FieldTwitter extends FieldText
 {
 	var $Length;
 	var $fieldtype = 'text';
+	var $placeholder = '@';
 
 	public function prepareForSave($value) 
 	{	

@@ -16,6 +16,10 @@ class FormServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/views' => base_path('resources/views/esterisk/form'),
         ]);
+        
+        \Blade::directive('form', function($expression) {
+			return "<?php echo view('esterisk.form.form', [ 'form' => $expression ]); ?>";
+		});
     }
 
     /**

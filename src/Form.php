@@ -8,7 +8,7 @@ class Form
 {
 	var $fields = [];
 	var $action = '';
-	var $method = '';
+	var $method = 'post';
 	var $defaults = null;
 	var $htmlclass = '';
 	var $title = '';
@@ -53,7 +53,16 @@ class Form
 		}
 		return $this;
 	}
-	
+		
+	public function __call($property, $value = null) {
+		if (!count($value)) $value = [ 1 ];
+		if (property_exists($this, $property) || property_exists($this, $property = snake_case($property))) {
+			if (method_exists($this, $method = 'set'.ucfirst($property))) return $this->$method($value);
+			$this->$property = $value[0];
+		}
+		return $this;
+	}
+
 	public function field($fieldtype, $name = '') {
 		$class = 'Esterisk\Form\Field\Field'.ucfirst($fieldtype);
 		return new $class($name, $this);

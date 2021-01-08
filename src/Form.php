@@ -14,6 +14,11 @@ class Form
 	var $title = '';
 	var $instructions = '';
 	var $fieldList = [];
+	var $relationFieldList = [];
+	var $scriptLibs = [];
+	var $resource = null;
+	var $original = null;
+	var $temporaryId = null;
 
 	public function __construct($options = [])
 	{
@@ -64,7 +69,8 @@ class Form
 	}
 
 	public function field($fieldtype, $name = '') {
-		$class = 'Esterisk\Form\Field\Field'.ucfirst($fieldtype);
+		if (preg_match('/\\\\/',$fieldtype)) $class = $fieldtype; // it's already a class name
+		else $class = 'Esterisk\Form\Field\Field'.ucfirst($fieldtype);
 		return new $class($name, $this);
 	}
 
@@ -75,8 +81,24 @@ class Form
 			foreach ( $field->getFieldList() as $fd) {
 				$key = $fd->name ?: $fd->fieldtype;
 				$this->fieldList[ $key ] = $fd;
+				if (count($fd->scriptLibs)) $this->scriptLibs = array_merge($this->scriptLibs, $fd->scriptLibs);
+			}
+			if ($field->isRelationField) {
+				$this->relationFieldList[ $key ] = $field;
 			}
 		}
+		if (count($this->scriptLibs)) $this->scriptLibs = array_unique($this->scriptLibs);
+	}
+	
+	public function defaultsFromRequest(Request $request)
+	{
+		foreach (array_keys($this->fieldList) as $key) {
+			if ($request->has($key)) $this->defaults[$key] = $request->$key;
+		}
+	}
+	
+	public function hasField($key) {
+		return isset($this->fieldList[ $key ]);
 	}
 	
 	public function validation() {
@@ -84,8 +106,7 @@ class Form
 		foreach ($this->fieldList as $field) {
 		//	if (method_exists($field, 'validator')) $field->validator();
 			if ($field->name) {
-				if ($field->arrayField) $rules[$field->name.'.*'] = $field->getRules();
-				else $rules[$field->name] = $field->getRules();
+				$rules = array_merge($rules, $field->getRules());
 			}
 		}
 		return $rules;
@@ -123,9 +144,10 @@ class Form
 		return $validator;
 	}
 	
-	public function salvable($request) {
+	public function salvable($request, $original = null) {
 		$src = $request->all();
 		$dst = [];
+		if ($original) $this->original = $original;
 		foreach ($src as $key => $value) {
 			if (isset($this->fieldList[$key])) $dst[$key] = $this->fieldList[$key]->prepareForSave($value);
 		}
@@ -135,6 +157,24 @@ class Form
 		return $dst;
 	}
 
+	public function afterSave($request, $record) {
+		$updates = [];
+		foreach ($this->fieldList as $key => $fd) {
+			$value = $fd->afterSave($request, $record);
+			if ($value) $updates[$key] = $value;
+		}
+		return $updates;
+	}
+	
+	public function reloadFields($record) {
+		$updated = [];
+		foreach ($this->fieldList as $key => $fd) {
+			if ($fd->reloadAfterSave) $updated[$key] = $fd->render($record->$key, $record);
+		}
+		return $updated;
+	}
+	
+
 	public function saveRelations($record) {
 		$rules = [];
 		foreach ($this->fieldList as $field) {
@@ -143,8 +183,24 @@ class Form
 	}
 	
 	public function save($record, $request) {
-		$record->save($this->salvable($request));
+		$record->update($this->salvable($request));
 		$this->saveRelations($record);
+	}
+	
+	public function model()
+	{
+		return $this->resource->model;
+	}
+	
+	public function recordKey()
+	{
+		return $this->fieldList['_id']->getDefault();
+	}
+	
+	
+	public function temporaryId()
+	{
+		
 	}
 
 }

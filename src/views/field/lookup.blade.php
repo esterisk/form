@@ -1,27 +1,39 @@
-{{-- richiede https://github.com/xcash/bootstrap-autocomplete --}}
+@extends('esterisk.form.field.two-col-field')
 
-		<label for="{{ $field->name }}" class="col-md-4 control-label">{{ $field->label }}</label>
+@section('editfield-'.$field->name)
+<div id="{{ $field->name }}-wrap">
+  <input id="{{ $field->name }}_lookup" type="text" value="{{ $field->getDefaultLabel() }}" class="typeahead form-control" placeholder="{{ $field->placeholder }}">
+</div>
+<input id="{{ $field->name }}" type="hidden" name="{{ $field->name }}" value="{{ $field->getDefault() }}"{{ $field->isrequired() }}>
 
-		<div class="col-md-8">
-			<select id="{{ $field->name }}" type="text" 
-				class="form-control form-lookup" 
-				name="{{ $field->name }}" 
-				data-url="{{ $field->dataSrcUrl }}"
-				data-noresults-text="{{ $field->noResultMessage }}"
-    				autocomplete="off"
-    				data-min-length=2
-    				data-request-throttling=200
-    				data-default-value="{{ $field->getDefault() }}"
-    				data-default-text="{{ $field->getDefaultText() }}"
-    				{{ $field->isrequired() }}>
-    			</select>
-			@if (!empty($field->help))
-			<small class="form-text text-muted">{{ $field->help }}</small>
-			@endif
+<script>
+$('document').ready( function() {
 
-			@if ($errors->has($field->name))
-				<span class="help-block">
-					<strong>{{ $errors->first($field->name) }}</strong>
-				</span>
-			@endif
-		</div>
+var {{ $field->name }}_source = new Bloodhound({
+  datumTokenizer: Bloodhound.tokenizers.obj.whitespace('label'),
+  queryTokenizer: Bloodhound.tokenizers.whitespace,
+  identify: function(obj) { return obj.value; },
+  remote: {
+	url: '{{ $field->lookupSource() }}?search=%QUERY',
+	wildcard: '%QUERY'
+  }
+});
+
+$('#{{ $field->name }}_lookup').typeahead({
+/*  name: '{{ $field->name }}', */
+  hint: true,
+  highlight: true,
+  minLength: 1
+},
+{
+  display: 'label',
+  source: {{ $field->name }}_source
+});
+
+$("#{{ $field->name }}_lookup").on("typeahead:selected typeahead:autocompleted", function(e,datum) { 
+	$('#{{ $field->name }}').val(datum.value);
+})
+
+});
+</script>
+@endsection

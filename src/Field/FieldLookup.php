@@ -1,5 +1,6 @@
 <?php
 namespace Esterisk\Form\Field;
+use Illuminate\Http\Request;
 
 class FieldLookup extends Field
 {
@@ -8,25 +9,44 @@ class FieldLookup extends Field
 	var $template = 'lookup';
 	var $dataSrcUrl = '';
 	var $noResultMessage = 'Nessun risultato trovato';
+	var $lookupModel;
 	var $lookupQueryTable;
 	var $lookupQueryId;
 	var $lookupQueryLabel;
+	var $lookupFilter;
 
-	public function getDefaultText()
+	public function getDefaultLabel()
 	{
 		$value = $this->getDefault();
 		if (!$value) return '';
-		$rec = \DB::table($this->lookupQueryTable)->where($this->lookupQueryId,'=',$value)->select(\DB::raw($this->lookupQueryLabel.' as label'))->first();
+		$rec = $this->initQuery()->where($this->lookupQueryId,'=',$value)->first();
 		if ($rec) return $rec->label;
 		return '';
 	}
-
-	public function executeLookup($q)
+	
+	public function lookupSource()
 	{
-		return \DB::table($this->lookupQueryTable)
-			->whereRaw($this->lookupQueryLabel.' LIKE "%'.str_replace('"','',$q).'%"')
-			->select(\DB::raw($this->lookupQueryLabel.' AS text,'.$this->lookupQueryId.' AS value'))
-			->orderBy(\DB::raw('LENGTH('.$this->lookupQueryLabel.')'))
+		if ($this->dataSrcUrl) return $this->dataSrcUrl;
+		if ($this->form->resource) return $this->form->resource->lookupRoute($this->name);
+		return false;
+	}
+	
+	public function initQuery()
+	{
+		if ($this->lookupModel) {
+			$query = new $this->lookupModel;
+		} elseif ($this->lookupQueryTable) {
+			$query = \DB::table($this->lookupQueryTable);
+		}
+		return $query
+			->select(\DB::raw($this->lookupQueryLabel.' AS label,'.$this->lookupQueryId.' AS value'))
+			->orderBy(\DB::raw('LENGTH('.$this->lookupQueryLabel.')'));
+	}
+	
+	public function executeLookup(Request $request)
+	{
+		return $this->initQuery()
+			->whereRaw($this->lookupQueryLabel.' LIKE "%'.str_replace('"','',$request->search).'%"')
 			->limit(12)
 			->get();
 	}

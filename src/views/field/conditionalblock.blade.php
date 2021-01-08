@@ -6,7 +6,7 @@
 				fieldtype-{{ $subfield->fieldtype }} 
 				fieldtpl-{{ $subfield->template }}
 				{{ $errors->has($subfield->name) ? ' has-error' : '' }}">
-				@include('form.'.$subfield->template, [ 'field' => $subfield ])
+				@include('esterisk.form.field.'.$subfield->template, [ 'field' => $subfield ])
 			</div>
 			@endforeach
 		</div>

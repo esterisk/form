@@ -42,4 +42,10 @@ class FieldUrl extends FieldText
 		$fragment = !empty($parsed_url['fragment']) ? '#' . $parsed_url['fragment'] : ''; 
 		return "$scheme$user$pass$host$port$path$query$fragment"; 
 	}
+	
+	function show($value)
+	{
+		return '<a href="'.$value.'" target="_blank">'.$value.'</a>';
+	}
+	
 }

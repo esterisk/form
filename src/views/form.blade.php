@@ -1,16 +1,21 @@
 @if ($errors->any())
 <div class="alert alert-warning" role="alert">
-Ci sono errori nei campi {{ implode(', ',$errors->all()) }}
+<p>Ci sono errori nei campi:</p>
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
 </div>
 @endif
 
-<form class="form-horizontal{{ $form->htmlclass ? ' '.$form->htmlclass : '' }}" method="{{ $form->method }}" action="{{ $form->action }}">
+<form id="editor-form" class="form-horizontal{{ $form->htmlclass ? ' '.$form->htmlclass : '' }}" method="{{ $form->method }}" action="{{ $form->action }}" enctype="multipart/form-data">
 	@if ($form->method == 'post')
 	{{ csrf_field() }}
 	@endif
 	@foreach ($form->fields as $field)
 	@if(!$field->controlblock)
-	<div class="form-group 
+	<div class="form-group row
 		field-{{ $field->name}} 
 		fieldtype-{{ $field->fieldtype }} 
 		fieldtpl-{{ $field->template }}
@@ -22,3 +27,19 @@ Ci sono errori nei campi {{ implode(', ',$errors->all()) }}
 	@endif
 	@endforeach
 </form>
+
+@section('jscript')	
+<script src="/js/esterisk-form.js"></script>
+	@foreach ($form->scriptLibs as $lib)
+<script src="{{ $lib }}"></script>
+	@endforeach
+
+@parent
+	@foreach ($form->fields as $field)
+		@if (method_exists($field, 'initScript')) 
+			<script>
+			{!! $field->initScript() !!}
+			</script>
+		@endif
+	@endforeach
+@endsection

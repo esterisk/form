@@ -1,7 +1,7 @@
 <?php
 namespace Esterisk\Form\Field;
 
-class FieldFileUpload extends Field
+class FieldFileupload extends Field
 {
 	var $fieldtype = 'fileupload';
 	var $template = 'fileupload';

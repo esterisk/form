@@ -1,16 +1,17 @@
 <?php
 namespace Esterisk\Form\Field;
 
-class FieldConditionalblock extends Field
+class FieldBlock extends Field
 {
 	var $fields = [];
-	var $fieldtype = 'conditionalblock';
+	var $fieldtype = 'block';
 	var $template = 'block';
-	var $controlblock = true;
-	var $triggerField = '';
-	var $showValue = '';
 	var $title = false;
-	
+	var $controlblock = true;
+	var $triggerField = false;
+	var $showValue = '';
+	var $triggerButton = false;
+
 	public function addFields($fields)
 	{
 		if (!is_array($fields)) $this->fields[] = $fields;

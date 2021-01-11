@@ -9,7 +9,7 @@
 </div>
 @endif
 
-<form id="editor-form" class="form-horizontal{{ $form->htmlclass ? ' '.$form->htmlclass : '' }}" method="{{ $form->method }}" action="{{ $form->action }}" enctype="multipart/form-data">
+<form id="editor-form" class="esterisk-form form-horizontal{{ $form->htmlclass ? ' '.$form->htmlclass : '' }}" method="{{ $form->method }}" action="{{ $form->action }}" enctype="multipart/form-data">
 	@if ($form->method == 'post')
 	{{ csrf_field() }}
 	@endif

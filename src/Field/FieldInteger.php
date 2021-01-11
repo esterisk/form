@@ -10,14 +10,9 @@ class FieldInteger extends FieldReal
 		return '1';
 	}
 	
-	public function numberMax()
+	static public function humanToDb($value)
 	{
-		return $this->max !== null ? ' max="'.$this->max.'"' : '';
-	}
-	
-	public function numberMin()
-	{
-		return $this->min !== null ? ' max="'.$this->min.'"' : '';
+		return intval(str_replace(',','.',$value));
 	}
 
 }

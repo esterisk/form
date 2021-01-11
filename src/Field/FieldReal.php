@@ -15,8 +15,20 @@ class FieldReal extends FieldText
 	
 	public function numberStep()
 	{
-		if ($this->decimals) return pow(10, $this->decimals);
+		if ($this->decimals) return pow(10, -$this->decimals);
 		else return '0.01';
+	}
+	
+	public function min($min)
+	{
+		$this->min = $min;
+		$this->rules[] = 'min:'.$min;
+	}
+	
+	public function max($max)
+	{
+		$this->max = $max;
+		$this->rules[] = 'max:'.$max;
 	}
 	
 	public function numberMax()
@@ -36,7 +48,7 @@ class FieldReal extends FieldText
 
 	static public function humanToDb($value)
 	{
-		return str_replace(',','.',$value);
+		return floatval(str_replace(',','.',$value));
 	}
 
 	public function prepareForSave($value) 

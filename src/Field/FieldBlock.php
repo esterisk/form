@@ -11,6 +11,7 @@ class FieldBlock extends Field
 	var $triggerField = false;
 	var $showValue = '';
 	var $triggerButton = false;
+	var $border = true;
 
 	public function addFields($fields)
 	{

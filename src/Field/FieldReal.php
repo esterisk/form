@@ -12,6 +12,7 @@ class FieldReal extends FieldText
 	var $max = null;
 	var $min = null;
 	var $decimals = 2;
+	var $prepend = null;
 	
 	public function numberStep()
 	{
@@ -29,6 +30,12 @@ class FieldReal extends FieldText
 	{
 		$this->max = $max;
 		$this->rules[] = 'max:'.$max;
+	}
+	
+	public function unit($unit)
+	{
+		$this->prepend = $unit;
+		return $this;
 	}
 	
 	public function numberMax()

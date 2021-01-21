@@ -11,6 +11,12 @@ class FieldSelect extends Field
 	{
 		$this->options = array_merge($this->options, $options);
 	}
+	
+	public function enum($options)
+	{
+		$this->options = array_combine($options, $options);
+		return $this;
+	}
 
 	public function getRules()
 	{

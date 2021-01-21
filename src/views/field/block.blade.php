@@ -3,7 +3,7 @@
 		<button type="button" class="btn btn-outline-secondary form-wrapper-opener" rel="{{ $field->name }}">Apri {{ $field->title }}</button>
 		@endif
 
-		<div {!! ($field->triggerField || $field->triggerButton) ? ' style="display:none"' : '' !!} id="{{ $field->name }}">
+		<div class="container form-block" {!! ($field->triggerField || $field->triggerButton) ? ' style="display:none"' : '' !!} id="{{ $field->name }}">
 			<div class="row"><div class="col-sm-12">
 
 				<div class="form-wrapper {{ $field->title ? ' with-title' : '' }}">
@@ -41,9 +41,15 @@
 		<script>
 			function {{ $field->name }}_conditional() {
 				$('[name={{ $field->triggerField }}]').change( function() {
-					if ($('#{{ $field->triggerField.'-'.$field->showValue }}:checked').val()
-						|| $('select[name={{ $field->triggerField }}]').val() == '{{ $field->showValue }}') 
-						$('#{{ $field->name }}').slideDown(); else $('#{{ $field->name }}').slideUp();
+					var opened = false;
+				@if(is_array($field->showValue))
+					@foreach ($field->showValue as $v)
+					if ($('#{{ $field->triggerField.'-'.$v }}:checked').val() || $('select[name={{ $field->triggerField }}]').val() == '{{ $v }}') opened = true;
+					@endforeach
+				@else				
+					if ($('#{{ $field->triggerField.'-'.$field->showValue }}:checked').val() || $('select[name={{ $field->triggerField }}]').val() == '{{ $field->showValue }}')  opened = true;
+				@endif
+					if (opened) $('#{{ $field->name }}').slideDown(); else $('#{{ $field->name }}').slideUp();
 				});
 			}
 			$(document).ready( function() { {{ $field->name }}_conditional() });

@@ -1,4 +1,4 @@
-@extends('esterisk.form.field.two-col-field')
+@extends($field->baseTemplate)
 
 @section('editfield-'.$field->name)
 	@if($field->prepend)

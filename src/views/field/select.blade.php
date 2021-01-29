@@ -1,4 +1,4 @@
-@extends('esterisk.form.field.two-col-field')
+@extends($field->baseTemplate)
 
 @section('editfield-'.$field->name)
 			<select class="form-control" id="{{ $field->name }}" name="{{ $field->name }}"{{ $field->isrequired() }}>

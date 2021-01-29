@@ -1,4 +1,4 @@
-@extends($field->hidden() ? 'esterisk.form.field.silent-field' : 'esterisk.form.field.two-col-field')
+@extends($field->hidden() ? 'esterisk.form.field.silent-field' : $field->baseTemplate)
 
 @section('editfield-'.$field->name)
 	@if ($field->fieldtype == 'hidden')

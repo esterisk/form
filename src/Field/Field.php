@@ -1,5 +1,6 @@
 <?php
 namespace Esterisk\Form\Field;
+use Illuminate\Support\Str;
 
 class Field
 {
@@ -27,17 +28,22 @@ class Field
 	var $record = null;
 	var $reloadAfterSave = false;
 	var $isRelationField = false;
+	var $baseTemplate = 'esterisk.form.field.two-col-field';
+	var $title;
+	var $cols;
 
-	public function __construct($name, $form)
+	public function __construct($name = null, $form = null)
 	{
 		$this->name = $name;
-		$this->form = $form;
+		if ($form) $this->form = $form;
 	}
 	
 	public function getFieldList()
 	{	
 		return [ $this ];
 	}
+	
+	public function validableFields($request) { return $this->getFieldList(); }
 	
 	public function __get($property) {
 		if (property_exists($this, $property)) {
@@ -61,6 +67,36 @@ class Field
 			$this->$property = $value[0];
 		}
 		return $this;
+	}
+
+    public static function __callStatic($fieldtype, $params)
+    {
+    	$name = $params[0] ?: $fieldtype;
+		$class = 'Esterisk\Form\Field\Field'.ucfirst(Str::camel($fieldtype));
+		return new $class($name);
+    }
+
+    public static function submit($label)
+    {
+		return (new \Esterisk\Form\Field\FieldSubmit())->label($label);
+    }
+
+    public static function make($name = null)
+    {
+		$class = __CLASS__;
+		return new $class($name ?: basename(__CLASS__));
+    }
+    
+    public function attachForm($form)
+    {
+		if (!$this->form) {
+			$this->form = $form;
+			$this->setupForm();
+		}
+    }
+    
+    public function setupForm()
+	{
 	}
 
 	public function getRules()
@@ -148,6 +184,15 @@ class Field
 	{
 		return $value;
 	}
+
+	public function salvableFields($request) { 
+		if ($value = $request->get($this->name)) return [ $this->name => $this->prepareForSave($value) ];
+		else return [ $this->name => $this->emptyValue ];
+	}
+
+	public function salvableRelations($request) { 
+		return [];
+	}
 	
 	public function prepareForSave($value)
 	{
@@ -157,12 +202,15 @@ class Field
 	public function getDefault($name = null)
 	{
 		if (!$name) $name = $this->name;
+		$defaultValue = null;
 		
-		if (is_object($this->form->defaults)) 
-			$defaultValue = (isset($this->form->defaults->$name) ? $this->form->defaults->$name : null );
-		elseif (is_array($this->form->defaults))
-			$defaultValue = (isset($this->form->defaults[$name]) ? $this->form->defaults[$name] : null );
-		else $defaultValue = $this->form->defaults;
+		if (is_object($this->form)) {
+			if (is_object($this->form->defaults)) 
+				$defaultValue = (isset($this->form->defaults->$name) ? $this->form->defaults->$name : null );
+			elseif (is_array($this->form->defaults))
+				$defaultValue = (isset($this->form->defaults[$name]) ? $this->form->defaults[$name] : null );
+			else $defaultValue = $this->form->defaults;
+		}
 		
 		if ($this->defaultValue && $defaultValue === null) $defaultValue = $this->defaultValue;
 		

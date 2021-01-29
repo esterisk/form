@@ -5,15 +5,16 @@ class FieldUrl extends FieldText
 {
 	var $fieldtype = 'url';
 	var $placeholder = 'http://';
-	var $rules = [ 'URL' ];
+	var $rules = [ 'regex:/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/' ]; //[ 'URL' ];
 
 	public function validator()
 	{	
 		$value = $this->requestValue();
-		$dummy = @file_get_contents($value);
-		if ($dummy == '') return 'indirizzo non raggiungibile';
+		if (!$value) return true;
+		$dummy = get_headers($value);
+		if ($dummy === false) return 'indirizzo «'.$value.'» non raggiungibile';
 		else return true;
-    	}
+    }
 
 	public function sanitize($value, $input)
 	{	

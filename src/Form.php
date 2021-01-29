@@ -1,5 +1,6 @@
 <?php
 namespace Esterisk\Form;
+use Esterisk\Form\Field\Field;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Validator;
@@ -10,6 +11,7 @@ class Form
 	var $action = '';
 	var $method = 'post';
 	var $defaults = null;
+	var $relationDefaults = null;
 	var $htmlclass = '';
 	var $title = '';
 	var $instructions = '';
@@ -19,11 +21,17 @@ class Form
 	var $resource = null;
 	var $original = null;
 	var $temporaryId = null;
+	var $id = null;
+	var $relations = [];
+	var $validableFieldList;
+	var $salvableFieldList;
+	var $relationValues;
 
 	public function __construct($options = [])
 	{
 		$this->initForm();
 		$this->options($options);
+		$this->id = 'form'.bin2hex(random_bytes(16));
 	}
 	
 	public function options($options)
@@ -68,26 +76,49 @@ class Form
 		return $this;
 	}
 
-	public function field($fieldtype, $name = '') {
-		if (preg_match('/\\\\/',$fieldtype)) $class = $fieldtype; // it's already a class name
-		else $class = 'Esterisk\Form\Field\Field'.ucfirst($fieldtype);
-		return new $class($name, $this);
+	public static function field($fieldtype, $name = null) {
+		if (preg_match('/\\\\/',$fieldtype)) return new $fieldtype($name); // it's already a class name
+		else return Field::$fieldtype($name);
 	}
 
 	public function addFields($fields) {
 		foreach($fields as $field) {
-			$key = $field->name ?: $field->fieldtype;
+			$key = $field->name;
+			$field->attachForm($this);
+			
 			$this->fields[ $key ] = $field;
 			foreach ( $field->getFieldList() as $fd) {
 				$key = $fd->name ?: $fd->fieldtype;
+				$fd->attachForm($this);
 				$this->fieldList[ $key ] = $fd;
 				if (count($fd->scriptLibs)) $this->scriptLibs = array_merge($this->scriptLibs, $fd->scriptLibs);
 			}
 			if ($field->isRelationField) {
 				$this->relationFieldList[ $key ] = $field;
 			}
+			if ($field->relationName) {
+				$this->addRelation($field->relationName);
+			}
 		}
 		if (count($this->scriptLibs)) $this->scriptLibs = array_unique($this->scriptLibs);
+	}
+	
+	public function addRelation($relationName)
+	{
+		if (!in_array($relationName, $this->relations)) $this->relations[] = $relationName;
+	}
+	
+	public function setDefault($key, $value)
+	{
+		$this->defaults[$key] = $value;
+	}
+	
+	public function setRelationDefaults($relation, $defaults) {
+		$this->relationDefaults[$relation] = $defaults;
+	}
+	
+	public function getRelationDefaults($relation) {
+		return $this->relationDefaults[$relation];
 	}
 	
 	public function defaultsFromRequest(Request $request)
@@ -101,9 +132,29 @@ class Form
 		return isset($this->fieldList[ $key ]);
 	}
 	
-	public function validation() {
+	public function selectValidableFields($request)
+	{
+		$this->validableFieldList = [];
+		foreach($this->fields as $name => $fieldSet ) {
+			foreach ( $fieldSet->validableFields($request) as $field ) {
+				$this->validableFieldList[] = $field;
+			}
+		}
+	}
+	
+	public function selectSalvableFields($request)
+	{
+		$this->salvableFieldList = [];
+		foreach($this->fields as $name => $field ) {
+			foreach ( $field->salvableFieldList($request) as $fd ) {
+				$$this->salvableFieldList[] = $fd;
+			}
+		}
+	}
+	
+	public function validation($request) {
 		$rules = [];
-		foreach ($this->fieldList as $field) {
+		foreach ($this->validableFieldList as $field) {
 		//	if (method_exists($field, 'validator')) $field->validator();
 			if ($field->name) {
 				$rules = array_merge($rules, $field->getRules());
@@ -112,10 +163,15 @@ class Form
 		return $rules;
 	}
 	
+	public function redeemId($request) {
+		if ($request->_formid) $this->id = $request->_formid;
+	}
+	
 	public function sanitize($request)
 	{
 		$input = $request->all();
-		foreach ($this->fieldList as $field) if (isset($input[$field->name]) && method_exists($field, 'sanitize')) { 
+		
+		foreach ($this->validableFieldList as $field) if (isset($input[$field->name]) && method_exists($field, 'sanitize')) { 
 			$sanitizedValue = $field->sanitize($input[$field->name], $input); 
 			if ($sanitizedValue != $input[$field->name]) {
 				$input[$field->name] = $sanitizedValue;
@@ -125,11 +181,13 @@ class Form
 	}
 	
 	public function validate(Request $request) {
+		$this->selectValidableFields($request);
+		$this->redeemId($request);
 		$this->sanitize($request);
-		$rules = $this->validation();
+		$rules = $this->validation($request);
 		$validator = Validator::make($request->all(), $rules);
 		$validator->after(function ($validator) {
-			foreach ($this->fieldList as $field) if (method_exists($field, 'validator')) {
+			foreach ($this->validableFieldList as $field) if (method_exists($field, 'validator')) {
 				$name = $field->name;
 				$result = $field->validator();
 				if ($result !== true) {
@@ -145,16 +203,24 @@ class Form
 	}
 	
 	public function salvable($request, $original = null) {
-		$src = $request->all();
 		$dst = [];
 		if ($original) $this->original = $original;
-		foreach ($src as $key => $value) {
-			if (isset($this->fieldList[$key])) $dst[$key] = $this->fieldList[$key]->prepareForSave($value);
-		}
 		foreach ($this->fieldList as $key => $fd) {
-			if (!isset($dst[$key])) $dst[$key] = $fd->emptyValue;
+			$dst = array_merge($dst, $fd->salvableFields($request));
+		}
+
+		if ($this->relations) {
+			$this->relationValues = [];
+			foreach ($this->fieldList as $key => $fd) {
+				$this->relationValues = array_merge($this->relationValues, $fd->salvableRelations($request));
+			}
 		}
 		return $dst;
+	}
+	
+	public function salvableRelations($relation) {
+		if (isset($this->relationValues[$relation])) return $this->relationValues[$relation];
+		else return null;
 	}
 
 	public function afterSave($request, $record) {

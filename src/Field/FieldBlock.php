@@ -19,10 +19,14 @@ class FieldBlock extends Field
 		else $this->fields = array_merge($this->fields, $fields);
 		return $this;
 	}
-	
+
 	public function getFieldList()
-	{	
-		return $this->fields;
+	{
+	    $fields = [];
+	    foreach ($this->fields as $field) {
+	        $fields = array_merge( $fields, $field->getFieldList() );
+	    }
+		return $fields;
 	}
 
 }

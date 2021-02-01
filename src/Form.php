@@ -23,6 +23,7 @@ class Form
 	var $temporaryId = null;
 	var $id = null;
 	var $relations = [];
+	var $mainEditFieldList = [];
 	var $validableFieldList;
 	var $salvableFieldList;
 	var $relationValues;
@@ -33,25 +34,25 @@ class Form
 		$this->options($options);
 		$this->id = 'form'.bin2hex(random_bytes(16));
 	}
-	
+
 	public function options($options)
 	{
 		if (!empty($options['action'])) $this->action = $options['action'];
 		if (!empty($options['method'])) $this->method = $options['method'];
 		if (!empty($options['fields'])) $this->fields = $options['fields'];
-		if (!empty($options['defaults'])) $this->defaults = $options['defaults'];
+		if (!empty($options['defaults'])) $this->setDefaults( $options['defaults'] );
 		if (isset($options['htmlclass'])) $this->htmlclass = $options['htmlclass'];
-		if (!empty($options['submit'])) $this->fields['submit']->label = $options['submit'];
+		if (!empty($options['submit']) && !empty($this->fields['submit'])) $this->fields['submit']->label = $options['submit'];
 		return $this;
 	}
-	
+
 	public function initForm()
 	{
 		$this->action = url()->current();
 		$this->method = 'post';
 		return $this;
 	}
-	
+
 	public function __get($property) {
 		if (method_exists($this, $method = 'get'.ucfirst($property))) return $this->$method();
 		if (property_exists($this, $property)) {
@@ -66,7 +67,7 @@ class Form
 		}
 		return $this;
 	}
-		
+
 	public function __call($property, $value = null) {
 		if (!count($value)) $value = [ 1 ];
 		if (property_exists($this, $property) || property_exists($this, $property = snake_case($property))) {
@@ -81,57 +82,111 @@ class Form
 		else return Field::$fieldtype($name);
 	}
 
+    public function registerField($field, $dataField = true)
+    {
+        $key = $field->name ?: $field->fieldtype; // applicato per campi-non campi come submit
+        $field->attachForm($this);
+        if ($dataField) $this->fieldList[ $key ] = $field;
+        if (count($field->scriptLibs)) $this->scriptLibs = array_merge($this->scriptLibs, $field->scriptLibs);
+        if ($field->relationName) {
+            $this->addRelation($field->relationName);
+        }
+    }
+
 	public function addFields($fields) {
 		foreach($fields as $field) {
 			$key = $field->name;
-			$field->attachForm($this);
-			
+            $this->mainEditFieldList = array_merge($this->mainEditFieldList, $field->mainEditFields());
 			$this->fields[ $key ] = $field;
-			foreach ( $field->getFieldList() as $fd) {
-				$key = $fd->name ?: $fd->fieldtype;
-				$fd->attachForm($this);
-				$this->fieldList[ $key ] = $fd;
-				if (count($fd->scriptLibs)) $this->scriptLibs = array_merge($this->scriptLibs, $fd->scriptLibs);
-			}
-			if ($field->isRelationField) {
-				$this->relationFieldList[ $key ] = $field;
-			}
-			if ($field->relationName) {
-				$this->addRelation($field->relationName);
-			}
+            $this->registerField($field, false);
+
+			foreach ( $field->getFieldList() as $fd) { $this->registerField($fd); }
 		}
-		if (count($this->scriptLibs)) $this->scriptLibs = array_unique($this->scriptLibs);
 	}
-	
+
 	public function addRelation($relationName)
 	{
 		if (!in_array($relationName, $this->relations)) $this->relations[] = $relationName;
 	}
-	
+
+	public function setDefaults($model)
+	{
+		$this->defaults = $model;
+		if (count($this->relations)) {
+		    foreach ($this->relations as $relationName) {
+		        $this->setRelationDefaults($relationName, $this->loadRelationDefaults($relationName));
+		    }
+        }
+	}
+
 	public function setDefault($key, $value)
 	{
 		$this->defaults[$key] = $value;
 	}
-	
+
+	public function isRelationKey($key) {
+	    if (preg_match('|^([a-z0-9_]+)\{(\d+)\}_([a-z0-9_]+)$|', $key, $m)) {
+	        return [
+	            'relationName' => $m[1],
+	            'index' => intval($m[2]),
+	            'field' => $m[3]
+	        ];
+	    } else return false;
+	}
+
+	public function relationName($relationName, $index, $key) {
+	    return $relationName.'{'.$index.'}_'.$key;
+	}
+
+    public function getDefault($key) {
+
+        if ($coords = $this->isRelationKey($key)) $defaultValue = $this->getRelationDefault($coords);
+        else {
+            if (is_object($this->defaults)) {
+                $defaultValue = (isset($this->defaults->$key) ? $this->defaults->$key : null );
+            } elseif (is_array($this->defaults)) {
+                $defaultValue = (isset($this->defaults[$key]) ? $this->defaults[$key] : null );
+            } else $defaultValue = $this->defaults;
+        }
+		return $defaultValue;
+    }
+
 	public function setRelationDefaults($relation, $defaults) {
 		$this->relationDefaults[$relation] = $defaults;
 	}
-	
+
 	public function getRelationDefaults($relation) {
 		return $this->relationDefaults[$relation];
 	}
-	
+
+	public function getRelationDefault($relation, $index = null, $key = null) {
+
+	    if (is_array($relation)) {
+	        $index = $relation['index'];
+	        $field = $relation['field'];
+	        $relationName = $relation['relationName'];
+	    } else { $relationName = $relation; }
+
+        if (isset($this->relationDefaults[ $relationName ]) &&
+            isset($this->relationDefaults[ $relationName ][ $index ]) &&
+            isset($this->relationDefaults[ $relationName ][ $index ][ $field ])
+        ) $defaultValue = $this->relationDefaults[ $relationName ][ $index ][ $field ];
+        else $defaultValue = null;
+
+        return $defaultValue;
+	}
+
 	public function defaultsFromRequest(Request $request)
 	{
 		foreach (array_keys($this->fieldList) as $key) {
 			if ($request->has($key)) $this->defaults[$key] = $request->$key;
 		}
 	}
-	
+
 	public function hasField($key) {
 		return isset($this->fieldList[ $key ]);
 	}
-	
+
 	public function selectValidableFields($request)
 	{
 		$this->validableFieldList = [];
@@ -141,7 +196,7 @@ class Form
 			}
 		}
 	}
-	
+
 	public function selectSalvableFields($request)
 	{
 		$this->salvableFieldList = [];
@@ -151,7 +206,7 @@ class Form
 			}
 		}
 	}
-	
+
 	public function validation($request) {
 		$rules = [];
 		foreach ($this->validableFieldList as $field) {
@@ -162,24 +217,24 @@ class Form
 		}
 		return $rules;
 	}
-	
+
 	public function redeemId($request) {
 		if ($request->_formid) $this->id = $request->_formid;
 	}
-	
+
 	public function sanitize($request)
 	{
 		$input = $request->all();
-		
-		foreach ($this->validableFieldList as $field) if (isset($input[$field->name]) && method_exists($field, 'sanitize')) { 
-			$sanitizedValue = $field->sanitize($input[$field->name], $input); 
+
+		foreach ($this->validableFieldList as $field) if (isset($input[$field->name]) && method_exists($field, 'sanitize')) {
+			$sanitizedValue = $field->sanitize($input[$field->name], $input);
 			if ($sanitizedValue != $input[$field->name]) {
 				$input[$field->name] = $sanitizedValue;
 				$request->replace($input);
 			}
 		}
 	}
-	
+
 	public function validate(Request $request) {
 		$this->selectValidableFields($request);
 		$this->redeemId($request);
@@ -195,13 +250,13 @@ class Form
 				}
 			}
 		});
-		
+
 		if ($validator->fails()) {
 			throw new \Illuminate\Validation\ValidationException($validator);
 		}
 		return $validator;
 	}
-	
+
 	public function salvable($request, $original = null) {
 		$dst = [];
 		if ($original) $this->original = $original;
@@ -217,7 +272,7 @@ class Form
 		}
 		return $dst;
 	}
-	
+
 	public function salvableRelations($relation) {
 		if (isset($this->relationValues[$relation])) return $this->relationValues[$relation];
 		else return null;
@@ -231,7 +286,7 @@ class Form
 		}
 		return $updates;
 	}
-	
+
 	public function reloadFields($record) {
 		$updated = [];
 		foreach ($this->fieldList as $key => $fd) {
@@ -239,7 +294,7 @@ class Form
 		}
 		return $updated;
 	}
-	
+
 
 	public function saveRelations($record) {
 		$rules = [];
@@ -247,26 +302,26 @@ class Form
 			if (method_exists($field, 'save')) $field->save($record);
 		}
 	}
-	
+
 	public function save($record, $request) {
 		$record->update($this->salvable($request));
 		$this->saveRelations($record);
 	}
-	
+
 	public function model()
 	{
 		return $this->resource->model;
 	}
-	
+
 	public function recordKey()
 	{
 		return $this->fieldList['_id']->getDefault();
 	}
-	
-	
+
+
 	public function temporaryId()
 	{
-		
+
 	}
 
 }

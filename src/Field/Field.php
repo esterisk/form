@@ -37,14 +37,16 @@ class Field
 		$this->name = $name;
 		if ($form) $this->form = $form;
 	}
-	
-	public function getFieldList()
-	{	
-		return [ $this ];
-	}
-	
+
+    /* lista di tutti i campi */
+	public function getFieldList() { return [ $this ]; }
+
+    /* lista dei campi mostrati come primo livello dal template del form (eventuali sottocampi saranno nel template del campo) */
+	public function mainEditFields() { return [ $this ]; }
+
+	/* lista dei campi da validare */
 	public function validableFields($request) { return $this->getFieldList(); }
-	
+
 	public function __get($property) {
 		if (property_exists($this, $property)) {
 			if (method_exists($this, $method = 'get'.ucfirst($property))) return $this->$method();
@@ -59,7 +61,7 @@ class Field
 		}
 		return $this;
 	}
-	
+
 	public function __call($property, $value) {
 		if (!count($value)) $value = [ 1 ];
 		if (property_exists($this, $property) || property_exists($this, $property = snake_case($property))) {
@@ -86,7 +88,7 @@ class Field
 		$class = __CLASS__;
 		return new $class($name ?: basename(__CLASS__));
     }
-    
+
     public function attachForm($form)
     {
 		if (!$this->form) {
@@ -94,37 +96,37 @@ class Field
 			$this->setupForm();
 		}
     }
-    
+
     public function setupForm()
 	{
 	}
 
 	public function getRules()
 	{
-		if ($this->required) {	
+		if ($this->required) {
 			$this->rule('required');
 		} else {
 			$this->rule('nullable');
 		}
 		$rules = [];
-		
+
 		if ($this->arrayField) {
 			$rules[$this->name.'.*'] = $this->rules;
 		}
-		
+
 		elseif ($this->subRules) {
 			foreach ($this->subRules as $key => $subrules) {
 				$rules[$this->name.'.'.$key] = array_merge($this->rules, $subrules);
 			}
 		}
-		
+
 		else {
 			$rules[$this->name] = $this->rules;
 		}
 
 		return $rules;
 	}
-	
+
 	public function rule($rule, $sub = null)
 	{
 		$ruleName = preg_replace('|:.+|','',$rule);
@@ -135,7 +137,7 @@ class Field
 		}
 		return $this;
 	}
-	
+
 	public function removeRule($rule, $sub = null)
 	{
 		if ($this->subRules && $sub) {
@@ -149,105 +151,109 @@ class Field
 		}
 		return $this;
 	}
-	
+
 	public function render($value = null, $record = null )
 	{
 		if ($value) $this->defaultValue = $value;
 		return view('esterisk.form.field.'.$this->template, [ 'field' => $this, 'record' => $record ])->render();
 	}
-	
+
 	public function checked($value)
 	{
 		if ($this->isRightOption($value)) return ' checked';
 		else return '';
 	}
-	
+
 	public function isrequired()
 	{
 		if ($this->required) return ' required';
 		else return '';
 	}
-	
+
 	public function selected($value)
 	{
 		if ($this->isRightOption($value)) return ' selected';
 		else return '';
 	}
-	
+
 	public function requestValue()
 	{
 		$name = $this->name;
 		return request()->$name;
 	}
-	
+
 	public function prepareForEdit($value)
 	{
 		return $value;
 	}
 
-	public function salvableFields($request) { 
+	public function salvableFields($request) {
 		if ($value = $request->get($this->name)) return [ $this->name => $this->prepareForSave($value) ];
 		else return [ $this->name => $this->emptyValue ];
 	}
 
-	public function salvableRelations($request) { 
+	public function salvableRelations($request) {
 		return [];
 	}
-	
+
 	public function prepareForSave($value)
 	{
 		return $value;
 	}
-	
+
+    public function setDefault($value)
+    {
+        $this->defaultValue = $value;
+        return $this;
+    }
+
+    function relationName($form, $relationName, $index) {
+        $this->name = $form->relationName($relationName, $index, $this->name);
+    }
+
 	public function getDefault($name = null)
 	{
-		if (!$name) $name = $this->name;
 		$defaultValue = null;
-		
-		if (is_object($this->form)) {
-			if (is_object($this->form->defaults)) 
-				$defaultValue = (isset($this->form->defaults->$name) ? $this->form->defaults->$name : null );
-			elseif (is_array($this->form->defaults))
-				$defaultValue = (isset($this->form->defaults[$name]) ? $this->form->defaults[$name] : null );
-			else $defaultValue = $this->form->defaults;
-		}
-		
-		if ($this->defaultValue && $defaultValue === null) $defaultValue = $this->defaultValue;
-		
-		return old($name, $this->prepareForEdit($defaultValue));
+
+		if (is_object($this->form)) $defaultValue = $this->form->getDefault($name ?: $this->name);
+		if (!$name || $name == $this->name) {
+    		if ($this->defaultValue && $defaultValue === null) $defaultValue = $this->defaultValue;
+    	}
+
+		return old($name ?: $this->name, $this->prepareForEdit($defaultValue));
 	}
 
 	public function isRightOption($value)
 	{
 		if ($value == $this->getDefault()) return true;
 	}
-	
+
 	public function show($value)
 	{
 		return $value;
 	}
-	
+
 	public function includedInForm()
 	{
 		return $this->visible && !$this->uneditable;
 	}
-	
+
 	public function editedInForm()
 	{
 		return !$this->uneditable;
 	}
-	
+
 	public function hide()
 	{
 		$this->visible(false);
 		return $this;
 	}
-	
+
 	public function hidden()
 	{
 		return !$this->visible;
 	}
-	
+
 	public function afterSave($request, $record)
 	{
 	}

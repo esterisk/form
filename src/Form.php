@@ -78,7 +78,7 @@ class Form
 	}
 
 	public static function field($fieldtype, $name = null) {
-		if (preg_match('/\\\\/',$fieldtype)) return new $fieldtype($name); // it's already a class name
+		if (preg_match('/\\\\/',$fieldtype)) return Field::create($fieldtype,$name); // it's already a class name
 		else return Field::$fieldtype($name);
 	}
 
@@ -156,7 +156,8 @@ class Form
 	}
 
 	public function getRelationDefaults($relation) {
-		return $this->relationDefaults[$relation];
+		if (isset( $this->relationDefaults[$relation] )) return $this->relationDefaults[$relation];
+		else return [];
 	}
 
 	public function getRelationDefault($relation, $index = null, $key = null) {

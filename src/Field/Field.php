@@ -14,6 +14,7 @@ class Field
  	var $subRules = false; // if field is represented through sub fields (es. datetime -> date, time) rules for subfields
 	var $fieldtype = 'text';
 	var $template = 'text';
+	var $customTemplate = false; // outside esterisk.form.field tree
 	var $defaultValue = null;
 	var $arrayField = false;
 	var $controlblock = false;
@@ -31,6 +32,7 @@ class Field
 	var $baseTemplate = 'esterisk.form.field.two-col-field';
 	var $title;
 	var $cols;
+	var $relationIndex = null;
 
 	public function __construct($name = null, $form = null)
 	{
@@ -74,13 +76,30 @@ class Field
     public static function __callStatic($fieldtype, $params)
     {
     	$name = $params[0] ?: $fieldtype;
-		$class = 'Esterisk\Form\Field\Field'.ucfirst(Str::camel($fieldtype));
+		$class = __NAMESPACE__.'\\'.ucfirst(Str::camel($fieldtype)).'Field';
 		return new $class($name);
+    }
+
+    public static function create($fieldClass, $name)
+    {
+		return new $fieldClass($name);
+    }
+
+    public function template($templateName = null, $custom = false)
+    {
+        /* without params returns template to use */
+        if (!$templateName) {
+            return $this->customTemplate ? $this->template : 'esterisk.form.field.'.$this->template;
+        } else {
+            $this->template = $templateName;
+            $this->customTemplate = $custom;
+            return $this;
+        }
     }
 
     public static function submit($label)
     {
-		return (new \Esterisk\Form\Field\FieldSubmit())->label($label);
+		return (new \Esterisk\Form\Field\SubmitField())->label($label);
     }
 
     public static function make($name = null)
@@ -209,6 +228,12 @@ class Field
 
     function relationName($form, $relationName, $index) {
         $this->name = $form->relationName($relationName, $index, $this->name);
+        $this->relationIndex = $index;
+    }
+
+    function relationSibling($fieldname)
+    {
+        return str_replace('{}','{'. $this->relationIndex.'}', $fieldname);
     }
 
 	public function getDefault($name = null)

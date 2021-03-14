@@ -4,9 +4,6 @@
 		@else
 			{{ $field->show($field->getDefault()) }}
 		@endif
-			@if (!empty($field->help))
-			<small class="form-text text-muted">{{ $field->help }}</small>
-			@endif
 			<div class="invalid-feedback"></div>
 			@if ($errors->has($field->name))
 				<span class="help-block">
@@ -14,3 +11,4 @@
 				</span>
 			@endif
 	@endif
+	

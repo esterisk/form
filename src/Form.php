@@ -27,6 +27,7 @@ class Form
 	var $validableFieldList;
 	var $salvableFieldList;
 	var $relationValues;
+	var $fieldLayoutTemplate = 'esterisk.form.field.two-col-field';
 
 	public function __construct($options = [])
 	{
@@ -319,6 +320,10 @@ class Form
 		return $this->fieldList['_id']->getDefault();
 	}
 
+	public function getFieldLayoutTemplate()
+	{
+		return $this->fieldLayoutTemplate;
+	}
 
 	public function temporaryId()
 	{

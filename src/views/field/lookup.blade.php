@@ -1,4 +1,4 @@
-@extends($field->baseTemplate)
+@extends($field->getLayoutTemplate())
 
 @section('editfield-'.$field->name)
 <div id="{{ $field->name }}-wrap">

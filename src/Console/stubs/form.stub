@@ -1,0 +1,23 @@
+<?php
+namespace DummyNamespace;
+use Esterisk\Form\Form;
+use Esterisk\Form\Field\Field;
+
+class DummyClass extends Form
+{
+
+	public function initForm()
+	{
+		$this->action = route('profile.update');
+		$this->method = 'post';
+		$this->addFields([
+
+//          Field::text('field_name')->label('Label'),
+//          Field::select('field_2_name')->label('Organizzazione')->options([ 'value' => 'label' ]),
+			Field::submit('submit')->label('Salva'),
+
+		]);
+	}
+
+}
+

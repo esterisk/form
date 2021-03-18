@@ -20,6 +20,11 @@ class FormServiceProvider extends ServiceProvider
         \Blade::directive('form', function($expression) {
 			return "<?php echo view('esterisk.form.form', [ 'form' => $expression ]); ?>";
 		});
+
+        $this->commands([
+            Console\FormMakeCommand::class,
+        ]);
+
     }
 
     /**

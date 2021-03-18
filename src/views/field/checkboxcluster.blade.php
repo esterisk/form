@@ -1,13 +1,11 @@
-		<label class="col-md-4 control-label">{{ $field->label }}</label>
+@extends($field->getLayoutTemplate())
 
-		<div class="col-md-8">
-			<div class="row">
+@section('editfield-'.$field->name)
 			@foreach ($field->fields as $subfield)
-			<div class="form-check checkbox col-md-12">
-			  <label class="form-check-label" for="{{ $subfield->name }}">
-			  <input class="form-check-input" type="{{ $subfield->fieldtype }}" value="{{ $subfield->value }}" id="{{ $subfield->name }}" name="{{ $subfield->name }}"{{ $subfield->checked($subfield->value) }}>
-				{{ $subfield->label }}
-			  </label>
+			<div class="custom-control custom-checkbox checkbox">
+
+			  <input class="custom-control-input" type="{{ $subfield->fieldtype }}" value="{{ $subfield->value }}" id="{{ $subfield->name }}" name="{{ $subfield->name }}"{{ $subfield->checked($subfield->value) }}>
+			  <label class="custom-control-label" for="{{ $subfield->name }}">{{ $subfield->label }}</label>
 				@if (!empty($subfield->help))
 				<small class="form-text text-muted">{{ $subfield->help }}</small>
 				@endif
@@ -18,15 +16,4 @@
 				@endif
 			</div>
 			@endforeach
-			</div>
-
-			@if (!empty($field->help))
-			<small class="form-text text-muted">{{ $field->help }}</small>
-			@endif
-
-			@if ($errors->has($field->name))
-				<span class="help-block">
-					<strong>{{ $errors->first($field->name) }}</strong>
-				</span>
-			@endif
-		</div>
+@endsection

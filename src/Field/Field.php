@@ -29,7 +29,7 @@ class Field
 	var $record = null;
 	var $reloadAfterSave = false;
 	var $isRelationField = false;
-	var $baseTemplate = 'esterisk.form.field.two-col-field';
+	var $baseTemplate = null;
 	var $title;
 	var $cols;
 	var $relationIndex = null;
@@ -281,6 +281,12 @@ class Field
 
 	public function afterSave($request, $record)
 	{
+	}
+
+	public function getLayoutTemplate()
+	{
+		if ($this->baseTemplate) return $this->baseTemplate;
+		else return $this->form->getFieldLayoutTemplate();
 	}
 
 }

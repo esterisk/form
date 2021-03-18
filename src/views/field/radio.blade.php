@@ -1,22 +1,10 @@
-		<label class="col-md-4 control-label">{{ $field->label }}</label>
+@extends($field->getLayoutTemplate())
 
-		<div class="col-md-8">
+@section('editfield-'.$field->name)
 			@foreach ($field->options as $value => $label)
-			<div class="form-check">
-			  <label class="form-check-label" for="{{ $field->name }}-{{ $value }}">
-			  <input class="form-check-input" type="{{ $field->fieldtype }}" value="{{ $value }}" id="{{ $field->name }}-{{ $value }}" name="{{ $field->name }}"{{ $field->checked($value) }}>
-				{{ $label }}
-			  </label>
+			<div class="custom-control custom-radio{{ count($field->options) <= 4 ? ' custom-control-inline' : ''}}">
+			    <input class="custom-control-input" type="{{ $field->fieldtype }}" value="{{ $value }}" id="{{ $field->name }}-{{ $value }}" name="{{ $field->name }}"{{ $field->checked($value) }}>
+			    <label class="custom-control-label" for="{{ $field->name }}-{{ $value }}">{{ $label }}</label>
 			</div>
 			@endforeach
-
-			@if (!empty($field->help))
-			<small class="form-text text-muted">{{ $field->help }}</small>
-			@endif
-
-			@if ($errors->has($field->name))
-				<span class="help-block">
-					<strong>{{ $errors->first($field->name) }}</strong>
-				</span>
-			@endif
-		</div>
+@endsection

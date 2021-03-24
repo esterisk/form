@@ -6,7 +6,7 @@
 			@foreach ($field->options as $value => $label)
 			    @if(substr($value,0,1) == '[')
 			    <optgroup label="{{ $label }}">
-			    @elseif($(substr($value,0,1) == ']')
+			    @elseif(substr($value,0,1) == ']')
 			    </optgroup>
 				@else
 				    <option{{ $field->selected($value) }} value="{{ $value }}">{{ $label }}</option>

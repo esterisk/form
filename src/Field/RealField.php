@@ -26,12 +26,14 @@ class RealField extends Field
 	{
 		$this->min = $min;
 		$this->rules[] = 'min:'.$min;
+		return $this;
 	}
 
 	public function max($max)
 	{
 		$this->max = $max;
 		$this->rules[] = 'max:'.$max;
+		return $this;
 	}
 
 	public function unit($unit, $options = null)

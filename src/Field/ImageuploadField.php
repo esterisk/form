@@ -6,7 +6,7 @@ class ImageuploadField extends FileuploadField
 	var $fieldtype = 'imageupload';
 	var $template = 'imageupload';
 	var $multiple = false;
-	var $accepts = false;
+	var $accept = [ 'image/jpeg','image/png','image/gif' ];
 	var $maxsize = 0;
 	var $repository;
 	var $webdir;
@@ -14,118 +14,38 @@ class ImageuploadField extends FileuploadField
 	var $unique = false;
 	var $file = null;
 	var $reloadAfterSave = true;
+	var $variant_style = null;
 
-	public function prepareForSave($value) 
-	{
-		$name = $this->name;
-		if (($keep = $this->keepValid($value)) !== false) return $keep;
-		else return '';
-	}
+    public function avatar($variant = null)
+    {
+        $this->template = 'avatar';
+        if (in_array($variant, [ 'logo' ])) $this->variant_style = $variant;
+        return $this;
+    }
 
-	public function afterSave($request, $record)
-	{
-		$name = $this->name;
-		$this->file = $request->$name;
-		if (($keep = $this->keepValid($this->file)) !== false) return $keep;
-		if (!$this->file) return '';
-		$this->record = $record;
-		
-		$title = $this->applyTitle();
-		$this->applyExtension($title);
-		if ($this->unique) $title = $this->applyUnique($title);
-		
-		$request->$name->move('/'.$this->repository, $title);
-		return $title;
-	}
-	
-	public function keepValid($value)
-	{
-		$name = $this->name;
-		if (is_array($value) && isset($value['keep'])) {
-			if (!$this->form->original || $this->form->original->$name == $value['keep']) return $value['keep'];
-			else return '';
-		} else return false;
-	}
-
-	public function applyTitle()
-	{
-		if (empty($this->title)) return $this->applyDefautlTitle();
-		if (gettype($this->title) == 'string') return $this->applyStringTitle();
-		if (gettype($this->title) == 'object' && get_class($this->title) == 'Closure') return $this->applyClosureTitle();
-		if (gettype($this->title) == 'object') return $this->applyObjectTitle();
-		return $this->applyDefautlTitle();
-	}
-	
-	public function applyDefautlTitle()
-	{
-		return $this->file->getClientOriginalName();
-	}
-	
-	public function applyStringTitle()
-	{
-		$title = preg_replace_callback('|\{([^\}]+)\}|', function($matches) {
-			$field = $matches[1];
-			if ($matches[1] == '_id') return $this->record->getKey();
-			return isset($this->record->$field) ? $this->record->$field : '';
-		}, $this->title);
-		return $title;
-	}
-	
-	public function applyClosureTitle()
-	{
-		$closure = $this->title;
-		return $closure($this->file, $this->record);
-	}
-	
-	public function applyObjectTitle()
-	{
-		return $this->title->fileTitle($this->file, $this->record);
-	}
-	
-	public function applyExtension(&$title)
-	{
-		$ext = str_replace('jpeg','jpg',$this->file->extension());
-		if (!preg_match('/\.'.$ext.'$/', $title)) $title = $title.'.'.$ext;
-	}
-	
-	public function applyUnique(&$title)
-	{
-		$original_title = $title;
-		$counter = 0;
-		while (file_exists($this->repository.'/'.$title)) {
-			$title = preg_replace('|\.([^\.]+)$|', '_'.(++$counter).'$1', $original_title);
-		}
-	}
-	
-	public function getDefaultValueInfo()
-	{
-		$value = $this->getDefault();
-		if ($value) {
-			if ($this->multiple) {
-		
-			} else {
-				return $this->getFileInfo($value);
-			}
-		} else return null;
-	}
+    public function filePath($file)
+    {
+        return '/'.$this->repository.'/'.$file;
+    }
 
 	public function getFileInfo($file)
 	{
-		$stat = stat('/'.$this->repository.'/'.$file);
-		$size = getImageSize('/'.$this->repository.'/'.$file);
+	    if (!file_exists($this->filePath($file))) return false;
+		$stat = stat($this->filePath($file));
+		$size = getImageSize($this->filePath($file));
 		$info = [
 			'name' => $file,
-			'path' => '/'.$this->repository.'/'.$file,
+			'path' => $this->filePath($file),
 			'url' => $this->webdir ? $this->webdir.'/'.$file : false,
 			'bytes' => $stat['size'],
 			'mtime' => $stat['mtime'],
 			'dim' => $size[0].'px &times; '.$size[1].'px',
 		];
-		switch (mime_content_type('/'.$this->repository.'/'.$file)) {
+		switch (mime_content_type($this->filePath($file))) {
 			case 'image/jpeg':
 			case 'image/png':
 			case 'image/gif':
-			case 'image/jpeg':
+			case 'image/jpg':
 				$info['icon'] = 'file-image-icon';
 				break;
 			case 'application/zip':
@@ -154,7 +74,7 @@ class ImageuploadField extends FileuploadField
 			case 'application/vnd.oasis.opendocument.text':
 				$info['icon'] = 'file-text-icon';
 				break;
-			default: 
+			default:
 				$info['icon'] = 'file-icon';
 				break;
 		}

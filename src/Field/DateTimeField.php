@@ -1,13 +1,14 @@
 <?php
 namespace Esterisk\Form\Field;
 if (!defined('ZERODATE')) define('ZERODATE','0000-01-01');
+if (!defined('ZEROTIME')) define('ZEROTIME','00:00');
 
 class DateTimeField extends Field
 {
 	var $Length;
 	var $fieldtype = 'text';
 	var $template = 'datetime';
-	var $subRules = [ 'date' => [ 'date' ], 'time' => [ 'date_format:H:i' ] ];
+	var $subRules = [ 'date' => [ 'date_format:j/n/Y' ], 'time' => [ 'date_format:H:i' ] ];
 	var $placeholder = [ 'date' => 'gg/mm/aaaa', 'time' => 'hh:pp' ];
 	var $shortcuts = [ 'now' => 'oggi', 'tomorrow' => 'domani' ];
 	var $emptyValue = ZERODATE.' 00:00:00';
@@ -17,7 +18,7 @@ class DateTimeField extends Field
 	{
 		if (is_object($value)) $value = $value->format('Y-m-d H:i:s');
 		if (
-			!$value 
+			!$value
 			|| $value == ZERODATE.' 00:00:00'
 			|| $value == '0000-00-00 00:00:00'
 			|| !preg_match('|(\d+)[/-](\d+)[/-](\d+) (\d+):(\d+):(\d+)|', $value, $m)
@@ -28,20 +29,29 @@ class DateTimeField extends Field
 		}
 		return $value;
 	}
-	
+
 	static public function sanitize($value)
 	{
 		if (empty($value['date'])) return ZERODATE.' 00:00:00';
-		else return $value['date'].' '.$value['time'];
+
+		if (!preg_match('|(\d+)[/-](\d+)[/-](\d+)|', $value['date'], $m) || $value['date'] == ZERODATE) $value['date'] = ZERODATE;
+		$value['date'] = intval($m[1]).'/'.(intval($m[2]) < 10 ? '0' : '').intval($m[2]).'/'.(intval($m[3]) < 100 ? (intval($m[3]) < date('y') ? '20' : '19') : '').intval($m[3]);
+
+		if (!preg_match('|(\d+)[:\.,](\d+)([:\.,](\d+))?|', $value['time'], $m) || $value['time'] == ZEROTIME) $value['time'] = ZEROTIME;
+		$value['time'] = (intval($m[1]) < 10 ? '0' : '').intval($m[1]).':'.(intval($m[2]) < 10 ? '0' : '').intval($m[2]).':'.(intval($m[3]) < 10 ? '0' : '').intval($m[3])
+
+		return $value['date'].' '.$value['time'];
 	}
-	
+
+	}
+
 	static public function readable($value)
 	{
 		$human = self::dbToHuman($value);
 		if ($human['date'] == '') return '';
 		return implode(', ', $human);
 	}
-	
+
 	static public function humanToDb($value)
 	{
 		$date = null; $time = null;
@@ -59,8 +69,8 @@ class DateTimeField extends Field
 		return $date.' '.$time;
 	}
 
-	public function prepareForSave($value) 
-	{	
+	public function prepareForSave($value)
+	{
 		return $this->humanToDb($value);
 	}
 
@@ -68,7 +78,7 @@ class DateTimeField extends Field
 	{
 		return $this->dbToHuman($value);
 	}
-	
+
 	public function show($value)
 	{
 		$human = self::dbToHuman($value);

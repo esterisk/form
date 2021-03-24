@@ -1,9 +1,12 @@
+@extends($field->getLayoutTemplate())
+
+@section('blockfield-'.$field->name)
 
 		@if($field->triggerButton)
 		<button type="button" class="btn btn-outline-secondary form-wrapper-opener" rel="{{ $field->name }}">Apri {{ $field->title }}</button>
 		@endif
 
-		<div class="container form-block" {!! ($field->trigger || $field->triggerButton) ? ' style="display:none"' : '' !!} id="{{ $field->name }}"{!! $field->trigger ? ' data-condition-trigger="'.$field->trigger.'"' : '' !!}>
+		<div class="form-block" {!! ($field->trigger || $field->triggerButton) ? ' style="display:none"' : '' !!} id="{{ $field->name }}"{!! $field->trigger ? ' data-condition-trigger="'.$field->trigger.'"' : '' !!}>
 			<div class="row"><div class="col-sm-12">
 
 				<div class="{{ $field->border ? 'form-wrapper ' : '' }}{{ $field->title ? ' with-title' : '' }}">
@@ -11,15 +14,18 @@
 				<h3>{{ $field->title }}</h3>
 			@endif
 
+        	<div class="row">
 			@foreach ($field->fields as $subfield)
-			<div class="form-group row
-				field-{{ $subfield->name}}
+			<div class="form-group
+        		{{ $field->name ? 'field-'.$field->name : ''}}
 				fieldtype-{{ $subfield->fieldtype }}
 				fieldtpl-{{ $subfield->template }}
-				{{ $errors->has($subfield->name) ? ' has-error' : '' }}">
+				{{ $errors->has($subfield->name) ? ' has-error' : '' }}
+        		{{ $subfield->layoutBlockCols }} ">
 				@include($subfield->template(), [ 'field' => $subfield ])
 			</div>
 			@endforeach
+			</div>
 				</div>
 
 			</div></div>
@@ -36,3 +42,5 @@
 			});
 		</script>
 		@endif
+
+@endsection

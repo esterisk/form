@@ -13,19 +13,22 @@
 	@if ($form->method == 'post')
 	{{ csrf_field() }}
 	@endif
+	<div class="row">
 	@foreach ($form->mainEditFieldList as $field)
-	@if(!$field->controlblock)
-	<div class="form-group row
-		field-{{ $field->name}}
+	@if(true || !$field->controlblock)
+	<div class="form-group
+		{{ $field->name ? 'field-'.$field->name : ''}}
 		fieldtype-{{ $field->fieldtype }}
 		fieldtpl-{{ $field->template }}
-		{{ $errors->has($field->name) ? ' has-error' : '' }}">
+		{{ $errors->has($field->name) ? ' has-error' : '' }}
+		{{ $field->layoutBlockCols }} ">
 	@endif
 		@include($field->template(), [ 'field' => $field ])
-	@if(!$field->controlblock)
+	@if(true || !$field->controlblock)
 	</div>
 	@endif
 	@endforeach
+	</div>
 </form>
 
 @section('jscript')

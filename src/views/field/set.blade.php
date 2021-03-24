@@ -1,3 +1,4 @@
+		<div class="row">
 		<label class="col-md-4 control-label">{{ $field->label }}</label>
 
 		<div class="col-md-8">
@@ -22,3 +23,4 @@
 				</span>
 			@endif
 		</div>
+        </div>

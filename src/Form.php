@@ -27,7 +27,7 @@ class Form
 	var $validableFieldList;
 	var $salvableFieldList;
 	var $relationValues;
-	var $fieldLayoutTemplate = 'esterisk.form.field.two-col-field';
+	var $fieldLayoutTemplate = 'esterisk.form.field.layouts.two-col-field';
 
 	public function __construct($options = [])
 	{

@@ -7,7 +7,7 @@ class DateField extends TextField
 	var $Length;
 	var $fieldtype = 'date';
 	var $template = 'date';
-	var $rules = [ 'date_format:d/m/Y' ];
+	var $rules = [ 'date_format:j/m/Y' ];
 	var $placeholder = 'gg/mm/aaaa';
 	var $shortcuts = [ 'today' => 'oggi', 'tomorrow' => 'domani' ];
 	var $emptyValue = ZERODATE;
@@ -18,7 +18,7 @@ class DateField extends TextField
 	{
 		$value = substr($value, 0, 10);
 		if (
-			!$value 
+			!$value
 			|| $value == ZERODATE
 			|| $value == '0000-00-00'
 			|| !preg_match('|(\d+)-(\d+)-(\d+)|', $value, $m)
@@ -30,26 +30,32 @@ class DateField extends TextField
 		return $value;
 	}
 
+	public function sanitize($value)
+	{
+		if (!preg_match('|(\d+)[/-](\d+)[/-](\d+)|', $value, $m) || $value == ZERODATE) $value = ZERODATE;
+		return intval($m[1]).'/'.(intval($m[2]) < 10 ? '0' : '').intval($m[2]).'/'.(intval($m[3]) < 100 ? (intval($m[3]) < date('y') ? '20' : '19') : '').intval($m[3]);
+	}
+
 	static public function humanToDb($value)
 	{
 		if (!preg_match('|(\d+)[/-](\d+)[/-](\d+)|', $value, $m) || $value == ZERODATE) $value = ZERODATE;
-		else $value = 
+		else $value =
 			(intval($m[3]) + (intval($m[3]) < 100 ? 2000 : 0)).'-'.
 			str_pad(intval($m[2]),2,'0',STR_PAD_LEFT).'-'.
 			str_pad(intval($m[1]),2,'0',STR_PAD_LEFT);
 		return $value;
 	}
 
-	public function prepareForSave($value) 
+	public function prepareForSave($value)
 	{
 		return $this->humanToDb($value);
 	}
-	
+
 	public function prepareForEdit($value = false)
 	{
 		return $this->dbToHuman($value);
 	}
-	
+
 	public function show($value)
 	{
 		if ($this->relative) {

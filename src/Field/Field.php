@@ -5,6 +5,7 @@ use Illuminate\Support\Str;
 class Field
 {
 	var $form;
+	var $parent;
 	var $name;
 	var $label;
 	var $help = '';
@@ -15,6 +16,7 @@ class Field
 	var $fieldtype = 'text';
 	var $template = 'text';
 	var $customTemplate = false; // outside esterisk.form.field tree
+	var $fieldLayoutTemplate = false; // layout of contained fields
 	var $defaultValue = null;
 	var $arrayField = false;
 	var $controlblock = false;
@@ -33,6 +35,13 @@ class Field
 	var $title;
 	var $cols;
 	var $relationIndex = null;
+	var $fields = null; // for container fields
+	// layout settings
+	var $layoutLabelCols = 'col-lg-3 col-md-4 col-sm-12';
+	var $layoutInputCols = 'col-lg-9 col-md-8 col-sm-12';
+	var $layoutLabelPosition = 'before';
+	var $layoutBlockCols = 'col-sm-12';
+    var $labelPositions = [ 'before', 'after', 'floating', 'inline', 'no' ];
 
 	public function __construct($name = null, $form = null)
 	{
@@ -114,6 +123,12 @@ class Field
 			$this->form = $form;
 			$this->setupForm();
 		}
+		if (is_array($this->fields)) {
+			foreach ($this->fields as $field) {
+				$field->attachForm($form);
+			}
+		}
+		if (!$this->parent) $this->setParent($form);
     }
 
     public function setupForm()
@@ -286,7 +301,57 @@ class Field
 	public function getLayoutTemplate()
 	{
 		if ($this->baseTemplate) return $this->baseTemplate;
-		else return $this->form->getFieldLayoutTemplate();
+		else return $this->parent->getFieldLayoutTemplate();
 	}
+
+	public function getFieldLayoutTemplate()
+	{
+		if ($this->fieldLayoutTemplate) return $this->fieldLayoutTemplate;
+		else return $this->parent->getFieldLayoutTemplate();
+	}
+
+	public function setParent($formOrField)
+	{
+	    $this->parent = $formOrField;
+	}
+
+    /* for container fields */
+	public function addFields($fields)
+	{
+		if (!is_array($fields)) $fields = [ $fields ];
+		foreach ($fields as $field) $field->setParent($this);
+        $this->fields = array_merge($this->fields, $fields);
+		return $this;
+	}
+
+    public function layout($inputCols, $labelCols = null, $labelPosition = null, $blockCols = null)
+    {
+        $label = null;
+        $input = null;
+        $position = null;
+        $block = null;
+
+        if (is_array($inputCols)) {
+            if (isset($inputCols['label']) && ($col = intval($inputCols['label'])) <= 12 && ($col > 0)) $label = $col;
+            if (isset($inputCols['input']) && ($col = intval($inputCols['input'])) <= 12 && ($col > 0)) $input = $col;
+            if (isset($inputCols['field']) && ($col = intval($inputCols['field'])) <= 12 && ($col > 0)) $input = $col;
+            if (isset($inputCols['block']) && ($col = intval($inputCols['block'])) <= 12 && ($col > 0)) $block = $col;
+            if (isset($inputCols['position']) && in_array($inputCols['position'], $this->labelPositions)) $position = $inputCols['position'];
+        } else {
+            if (isset($inputCols) && ($col = intval($inputCols)) <= 12 && ($col > 0)) $input = $col;
+            if (isset($labelCols) && ($col = intval($labelCols)) <= 12 && ($col > 0)) $label = $col;
+            if (isset($blockCols) && ($col = intval($blockCols)) <= 12 && ($col > 0)) $block = $col;
+            if (isset($labelPosition) && in_array($labelPosition, $this->labelPositions)) $position = $labelPosition;
+        }
+
+        if ($input > 0 && $input <= 12 && $label === null) $label = 12 - $input;
+
+        if ($label > 0) $this->layoutLabelCols = 'col-md-'.$label.' col-sm-12';
+        if ($input > 0) $this->layoutInputCols = 'col-md-'.$input.' col-sm-12';
+        if ($block > 0) $this->layoutBlockCols = 'col-md-'.$block.' col-sm-12';
+        if ($position) $this->layoutLabelPosition = $position;
+
+        return $this;
+    }
 
 }

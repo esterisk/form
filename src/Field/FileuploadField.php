@@ -15,7 +15,7 @@ class FileuploadField extends Field
 	var $file = null;
 	var $reloadAfterSave = true;
 
-	public function prepareForSave($value) 
+	public function prepareForSave($value)
 	{
 		$name = $this->name;
 		if (($keep = $this->keepValid($value)) !== false) return $keep;
@@ -29,15 +29,14 @@ class FileuploadField extends Field
 		if (($keep = $this->keepValid($this->file)) !== false) return $keep;
 		if (!$this->file) return '';
 		$this->record = $record;
-		
+
 		$title = $this->applyTitle();
 		$this->applyExtension($title);
 		if ($this->unique) $title = $this->applyUnique($title);
-		
 		$request->$name->move('/'.$this->repository, $title);
 		return $title;
 	}
-	
+
 	public function keepValid($value)
 	{
 		$name = $this->name;
@@ -55,12 +54,12 @@ class FileuploadField extends Field
 		if (gettype($this->title) == 'object') return $this->applyObjectTitle();
 		return $this->applyDefautlTitle();
 	}
-	
+
 	public function applyDefautlTitle()
 	{
 		return $this->file->getClientOriginalName();
 	}
-	
+
 	public function applyStringTitle()
 	{
 		$title = preg_replace_callback('|\{([^\}]+)\}|', function($matches) {
@@ -70,24 +69,24 @@ class FileuploadField extends Field
 		}, $this->title);
 		return $title;
 	}
-	
+
 	public function applyClosureTitle()
 	{
 		$closure = $this->title;
 		return $closure($this->file, $this->record);
 	}
-	
+
 	public function applyObjectTitle()
 	{
 		return $this->title->fileTitle($this->file, $this->record);
 	}
-	
+
 	public function applyExtension(&$title)
 	{
 		$ext = str_replace('jpeg','jpg',$this->file->extension());
 		if (!preg_match('/\.'.$ext.'$/', $title)) $title = $title.'.'.$ext;
 	}
-	
+
 	public function applyUnique(&$title)
 	{
 		$original_title = $title;
@@ -96,18 +95,29 @@ class FileuploadField extends Field
 			$title = preg_replace('|\.([^\.]+)$|', '_'.(++$counter).'$1', $original_title);
 		}
 	}
-	
+
 	public function getDefaultValueInfo()
 	{
 		$value = $this->getDefault();
 		if ($value) {
 			if ($this->multiple) {
-		
+
 			} else {
 				return $this->getFileInfo($value);
 			}
 		} else return null;
 	}
+
+    public function accept($value = null)
+    {
+        if ($value) {
+            if (!is_array($value)) $value = [ $value ];
+            $this->accept = $value;
+        } else {
+            if ($this->accept) return ' accept="'.implode(',',$this->accept).'"';
+            else return '';
+        }
+    }
 
 	public function getFileInfo($file)
 	{
@@ -152,7 +162,7 @@ class FileuploadField extends Field
 			case 'application/vnd.oasis.opendocument.text':
 				$info['icon'] = 'file-text-icon';
 				break;
-			default: 
+			default:
 				$info['icon'] = 'file-icon';
 				break;
 		}

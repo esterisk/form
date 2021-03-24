@@ -13,13 +13,7 @@ class BlockField extends Field
 	var $triggerButton = false;
 	var $border = true;
 	var $trigger = false;
-
-	public function addFields($fields)
-	{
-		if (!is_array($fields)) $this->fields[] = $fields;
-		else $this->fields = array_merge($this->fields, $fields);
-		return $this;
-	}
+	var $baseTemplate = 'esterisk.form.field.layouts.block-field-container';
 
 	public function getFieldList()
 	{
